@@ -5,10 +5,15 @@ import urllib.request
 import argparse
 
 def getWebsite(search, amount):
-	url = 'http://en.wikipedia.org/wiki/' + search.replace(" ", "_")
-	site = urllib.request.urlopen(url)
+	searchurl = 'http://en.wikipedia.org/w/index.php?search=' + search + '&title=Special%3ASearch&go=Go'
+	site = urllib.request.urlopen(searchurl)
 	soup = BeautifulSoup(site)
 	soup.prettify()
+	firstLink = soup.find("div", { "class" : "mw-search-result-heading" })
+	if firstLink:
+		site = urllib.request.urlopen('http://en.wikipedia.org'+firstLink.a.get('href'))
+		soup = BeautifulSoup(site)
+		soup.prettify()
 	paras = soup.find_all('p')
 	output = []
 	for index in range(amount):
@@ -24,6 +29,7 @@ def outputToHTML(terms, outputFile):
 	html.write('<html>')
 	for term in terms:
 		for para in term:
+			para = para.replace('href="', 'href="http://en.wikipedia.org')
 			html.write(str(para))
 	html.write('</html>')
 
@@ -32,7 +38,7 @@ def readInfile(inp):
 	f = open(inp,'r')
 	lines = f.readlines()
 	for l in range(0,len(lines)):
-		lines[l]=lines[l].replace(' ','_')
+		lines[l]=lines[l].replace(' ','+')
 		lines[l]=lines[l].replace('\n','')
 	f.close()
 	return lines
@@ -47,16 +53,17 @@ def main():
 	args = parser.parse_args()
 	search = args.search
 	amount = int(args.amount)
-	outputFile = args.outputFile.replace('\\', '/')
-	inf = args.inf.replace('\\', '/')
+	outputFile = args.outputFile
+	inf = args.inf
 	if(search):
 		#TODO get a single term and print to console 
+		print('search')
 	if(inf):
-		terms = readInfile(inf)
+		terms = readInfile(inf.replace('\\', '/'))
 		termParas = []
 		for t in terms:
 			termParas.append(getWebsite(t, amount))
-		outputToHTML(termParas, outputFile)
+		outputToHTML(termParas, outputFile.replace('\\', '/'))
 		
 if __name__ == '__main__':
 	main()
