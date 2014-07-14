@@ -37,7 +37,6 @@ def readInfile(inp):
 	f.close()
 	return lines
 
-
 def main():
 	sys.stdout = io.TextIOWrapper(sys.stdout.buffer,'cp437','backslashreplace')
 	parser = argparse.ArgumentParser(prog="pywikidef",description="pywikidef") 
@@ -58,7 +57,6 @@ def main():
 		for t in terms:
 			termParas.append(getWebsite(t, amount))
 		outputToHTML(termParas, outputFile)
-
 		
 if __name__ == '__main__':
 	main()
