@@ -1,4 +1,4 @@
 pywikidef
 =========
 
-Python script that gives detailed definitions of a list of terms from Wikipedia
+Python script that gives detailed definitions of a list of terms from Wikipedia.  Requires BeautifulSoup4.
