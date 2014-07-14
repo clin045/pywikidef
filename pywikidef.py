@@ -15,15 +15,34 @@ def getWebsite(search, amount):
 		except IndexError:
 			print("\n\nThere are no more paragraphs")
 			break
-
 def main():
-	parser = argparse.ArgumentParser(prog="pywikidef", description="pywikidef")
-	parser.add_argument('--input', '-i', dest='inp', required=True, help='What you are looking for')
+	parser = argparse.ArgumentParser(prog="pywikidef",description="pywikidef") 
+	parser.add_argument('--input', '-i', dest='search', help='Search a single term')
+	parser.add_argument('--inputfile','-if',dest='inf', help='Input file with list of terms')
 	parser.add_argument('--amount', '-a', dest='amount', default=1, help='Amount of paragraphs')
 	args = parser.parse_args()
-	search = args.inp
+	search = args.search
 	amount = int(args.amount)
-	getWebsite(search, amount)
+	inf = args.inf
+	if(search):
+		getWebsite(search)
+	if(inf):
+		#terms = readInfile(inf)
+		#print(terms)
+		terms = ['John_Adams','George_Washington']
+		for t in terms:
+			getWebsite(t, amount)
+		
+
+def readInfile(inp):
+	inp.replace("\\","/")
+	f = open(inp,'r')
+	lines = f.readlines()
+	for l in range(0,len(lines)):
+		lines[l]=lines[l].replace(' ','_')
+		lines[l]=lines[l].replace('\n','')
+	f.close()
+	return lines
 
 if __name__ == '__main__':
 	main()
