@@ -27,10 +27,9 @@ def main():
 	if(search):
 		getWebsite(search)
 	if(inf):
-		#terms = readInfile(inf)
-		#print(terms)
-		terms = ['John_Adams','George_Washington']
+		terms = readInfile(inf)
 		for t in terms:
+			print('\n\n')
 			getWebsite(t, amount)
 		
 
