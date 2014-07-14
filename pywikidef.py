@@ -1,4 +1,6 @@
 from bs4 import BeautifulSoup
+import sys
+import io
 import urllib.request
 import argparse
 
@@ -8,31 +10,22 @@ def getWebsite(search, amount):
 	soup = BeautifulSoup(site)
 	soup.prettify()
 	paras = soup.find_all('p')
+	output = []
 	for index in range(amount):
 		try:
-			output = str(paras[index].get_text()).encode(errors='backslashreplace')
-			print(output)
+			output.append(str(paras[index]))
 		except IndexError:
-			print("\n\nThere are no more paragraphs")
+			print("\n\nThere were only " + str(index) + " paragraphs")
 			break
-def main():
-	parser = argparse.ArgumentParser(prog="pywikidef",description="pywikidef") 
-	parser.add_argument('--input', '-i', dest='search', help='Search a single term')
-	parser.add_argument('--inputfile','-if',dest='inf', help='Input file with list of terms')
-	parser.add_argument('--amount', '-a', dest='amount', default=1, help='Amount of paragraphs')
-	args = parser.parse_args()
-	search = args.search
-	amount = int(args.amount)
-	inf = args.inf
-	if(search):
-		getWebsite(search)
-	if(inf):
-		#terms = readInfile(inf)
-		#print(terms)
-		terms = ['John_Adams','George_Washington']
-		for t in terms:
-			getWebsite(t, amount)
-		
+	return output
+
+def outputToHTML(terms, outputFile):
+	html = open(outputFile, 'w')
+	html.write('<html>')
+	for term in terms:
+		for para in term:
+			html.write(str(para))
+	html.write('</html>')
 
 def readInfile(inp):
 	inp.replace("\\","/")
@@ -44,5 +37,28 @@ def readInfile(inp):
 	f.close()
 	return lines
 
+
+def main():
+	sys.stdout = io.TextIOWrapper(sys.stdout.buffer,'cp437','backslashreplace')
+	parser = argparse.ArgumentParser(prog="pywikidef",description="pywikidef") 
+	parser.add_argument('--input', '-i', dest='search', help='Search a single term')
+	parser.add_argument('--output', '-o', dest='outputFile', help='Output File')
+	parser.add_argument('--inputfile','-if',dest='inf', help='Input file with list of terms')
+	parser.add_argument('--amount', '-a', dest='amount', default=1, help='Amount of paragraphs')
+	args = parser.parse_args()
+	search = args.search
+	amount = int(args.amount)
+	outputFile = args.outputFile.replace('\\', '/')
+	inf = args.inf.replace('\\', '/')
+	if(search):
+		#TODO get a single term and print to console 
+	if(inf):
+		terms = readInfile(inf)
+		termParas = []
+		for t in terms:
+			termParas.append(getWebsite(t, amount))
+		outputToHTML(termParas, outputFile)
+
+		
 if __name__ == '__main__':
 	main()
