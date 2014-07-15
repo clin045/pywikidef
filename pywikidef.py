@@ -147,7 +147,7 @@ def searchMode(amount):
 	# Go until they type quit()
 	while searchTerm != 'quit()':
 		# Add what they searched to the search terms
-		searchTerms.append(searchTerm)
+		searchTerms.append(searchTerm.replace(' ', '+'))
 		# Get the info and add it to termParagraphs in paragraph format
 		termParagraphs = [getInformation(searchTerm, amount)]
 		# Temp var to hold the paragraphs
