@@ -173,7 +173,7 @@ def main():
 	parser.add_argument('--output', '-o', dest='outputFile', help='Output File', default="terms.html")
 	parser.add_argument('--amount', '-a', dest='amount', default=1, help='Amount of paragraphs')
 	parser.add_argument('--search', '-s', action='store_true', help='Enter 1 term at a time searching')
-	parser.add_argument('--flashlight', '-f', action='store_true', help='LOL')
+	parser.add_argument('--flashlight', '-f', action='store_true', help='TURN DOWN FOR WHAT')
 	args = parser.parse_args()
 	if args.flashlight:
 		while True:
