@@ -1,8 +1,10 @@
 from bs4 import BeautifulSoup
 import sys
 import io
+import os
 import urllib.request
 import argparse
+import random
 
 def getParagraphs(content):
 	""" Grab all paragraph elements from content 
@@ -14,7 +16,7 @@ def getParagraphs(content):
 	for item in content:
 		# If the wiki page is one of those may refer to pages
 		if item.find(' may refer to:') > -1:
-			paragraphs = checkMultipleOptions(content)
+			paragraphs.append(checkMultipleOptions(content))
 			break
 		# None of those silly single line blank paragraphs
 		if len(item) < 10:
@@ -45,12 +47,12 @@ def checkMultipleOptions(content):
 		content = list of html elements 
 		outputs a list of lists """
 
-	paragraphs = []
-	paragraphs.append("<p>There were multiple things found for that item so here's a link or two since I can't read minds")
+	paragraphs = ""
+	paragraphs += "<p>There were multiple things found for that item</p>"
 	for item in content:
 		#Get the lists of links provided by the page
 		if item.find('<ul>') > -1:
-			paragraphs.append(item)
+			paragraphs += str(item)
 	return paragraphs
 
 def getUrlSoup(search):
@@ -98,6 +100,9 @@ def outputToHTML(searchTerms, termParagraphs, outputFile):
 		termParagraphs = output from getInformation()
 		outputFile = the file path to output """
 
+	if len(searchTerms) == 0 or len(termParagraphs) == 0:
+		print("No output")
+		return
 	# We don't like \ slashes
 	outputFile.replace('\\', '/')
 	html = open(outputFile, 'w')
@@ -129,6 +134,34 @@ def readInfile(inputFile):
 	f.close()
 	return lines
 
+def searchMode(amount):
+	""" Loop for 1 word per lookup searching 
+
+		amount = # of paragraphs to get 
+		returns a list of lists of paragraphs 
+		returns the terms searched """
+
+	Paragraphs = []
+	searchTerms = []
+	searchTerm = input("What would you like to search?\nquit() for quit\n")
+	# Go until they type quit()
+	while searchTerm != 'quit()':
+		# Add what they searched to the search terms
+		searchTerms.append(searchTerm)
+		# Get the info and add it to termParagraphs in paragraph format
+		termParagraphs = [getInformation(searchTerm, amount)]
+		# Temp var to hold the paragraphs
+		temp = []
+		for index, term in enumerate(termParagraphs):
+			for para in term:
+				temp.append(para)
+		# Add the list to the list of lists to return later
+		Paragraphs.append(temp)
+		input("Enter to continue")
+		#Go again!
+		searchTerm = input("\n"*100 + "What would you like to search?\nquit() for quit\n")
+	return Paragraphs, searchTerms
+
 def main():
 	""" Main method """
 
@@ -136,22 +169,27 @@ def main():
 	sys.stdout = io.TextIOWrapper(sys.stdout.buffer,'cp437','backslashreplace')
 	# Parser for command line arguments
 	parser = argparse.ArgumentParser(prog="pywikidef",description="pywikidef") 
-	parser.add_argument('--inputfile','-i',dest='inputFile', help='Input file with list of searchTerms')
-	parser.add_argument('--output', '-o', dest='outputFile', help='Output File')
+	parser.add_argument('--inputfile','-i', dest='inputFile', help='Input file with list of searchTerms')
+	parser.add_argument('--output', '-o', dest='outputFile', help='Output File', default="terms.html")
 	parser.add_argument('--amount', '-a', dest='amount', default=1, help='Amount of paragraphs')
-	#TODO - single search terms
+	parser.add_argument('--search', '-s', action='store_true', help='Enter 1 term at a time searching')
+	parser.add_argument('--flashlight', '-f', action='store_true', help='LOL')
 	args = parser.parse_args()
+	if args.flashlight:
+		while True:
+			os.system("color " + str(random.randrange(0, 9)) + str(random.randrange(0, 9)))
 	amount = int(args.amount)
-	outputFile = args.outputFile
-	inputFile = args.inputFile
-	if inputFile:
-		searchTerms = readInfile(inputFile)
+	if args.inputFile:
+		searchTerms = readInfile(args.inputFile)
 		termParagraphs = []
 		for t in searchTerms:
 			termParagraphs.append(getInformation(t, amount))
-		outputToHTML(searchTerms, termParagraphs, outputFile)
+		outputToHTML(searchTerms, termParagraphs, args.outputFile)
+	elif args.search:
+		termParagraphs, searchTerms = searchMode(amount)
+		outputToHTML(searchTerms, termParagraphs, args.outputFile)
 	else:
-		print(args.help)
+		parser.print_help()
 
 if __name__ == '__main__':
 	main()
