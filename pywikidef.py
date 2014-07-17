@@ -6,24 +6,35 @@ import urllib.request
 import argparse
 import random
 
-def getParagraphs(content):
+debug = False
+
+def getParagraphs(content, amount):
 	""" Grab all paragraph elements from content 
 
 		content = list of html elements 
 		outputs the list of paragraphs """
 
+	global debug
+
 	paragraphs = []
+	#Used to keep track of how many paragraphs we have
+	used = 0
 	for item in content:
 		# If the wiki page is one of those may refer to pages
-		if item.find(' may refer to:') > -1:
+		if item.find(' may refer to:') > -1 or item.find(' may also refer to:') > -1:
 			paragraphs.append(checkMultipleOptions(content))
 			break
 		# None of those silly single line blank paragraphs
 		if len(item) < 10:
 			continue
 		# Grabs the paragraphs that aren't massive divs in disguise
-		if item.find('<p>') > -1 and item.find('<div>')  == -1:
-			paragraphs.append(item)
+		if item.find('<p>') > -1 and item.find('<div>')  == -1 and item.find('<table') == -1:
+			if item.find('For search options') > -1: paragraphs.append("That item could not be found, try searching something different")
+			else: paragraphs.append(item)
+			used += 1
+		if used >= amount:
+			break
+	if debug: print("Got that info")
 	return paragraphs
 
 def checkExactTerm(soup):
@@ -51,7 +62,7 @@ def checkMultipleOptions(content):
 	paragraphs += "<p>There were multiple things found for that item</p>"
 	for item in content:
 		#Get the lists of links provided by the page
-		if item.find('<ul>') > -1:
+		if item.find('<ul>') > -1 and item.find('class="toc"') == -1:
 			paragraphs += str(item)
 	return paragraphs
 
@@ -81,17 +92,8 @@ def getInformation(search, amount):
 	soup = checkExactTerm(soup)
 	# Grab the content pane's children for checking
 	content = map(str, soup.find('div', { 'id' : 'mw-content-text'}).children)
-	# Grab all of the content's paragraphs
-	paragraphs = getParagraphs(content)
-	# Group them correctly for html output
-	output = []
-	for index in range(amount):
-		try:
-			output.append(paragraphs[index])
-		except IndexError:
-			print("\n\nThere were only " + str(index) + " paragraphs for the search: " + search)
-			break
-	return output
+	# Grab the amount of paragraphs needed and return
+	return getParagraphs(content, amount)
 
 def outputToHTML(searchTerms, termParagraphs, outputFile):
 	""" Ouputs the information in HTML format
@@ -100,20 +102,32 @@ def outputToHTML(searchTerms, termParagraphs, outputFile):
 		termParagraphs = output from getInformation()
 		outputFile = the file path to output """
 
+	global debug
+
 	if len(searchTerms) == 0 or len(termParagraphs) == 0:
 		print("No output")
 		return
 	# We don't like \ slashes
 	outputFile.replace('\\', '/')
-	html = open(outputFile, 'w')
+	#encoding needed for unicode character shenanigans when writing to the file.
+	html = open(outputFile, 'w', encoding="utf-8-sig")
 	# TODO - use a template and make it pretty
-	# Writes it to a really plain html file
+	# Writes it to a really plain html file. Inline styling is the best
 	html.write('<html>')
+	html.write('<h1>~Report~</h1>')
+	for search in searchTerms:
+		html.write('<ul style="list-style-type:none">')
+		html.write('<li><a href="#'+search+'">' + search + '</a></li>')
+		html.write('</ul>')
 	for index, term in enumerate(termParagraphs):
-		html.write("<p>-----------------"+searchTerms[index].replace("+"," ")+"-----------------</p>")
+		html.write('<h3 style="background-color:#ccc;" id="'+searchTerms[index]+'">'+searchTerms[index].replace('+',' ')+'</h3>')
 		for para in term:
-			para = para.replace('href="', 'href="http://en.wikipedia.org')
-			html.write(str(para))
+			try:
+				para = para.replace('href="', 'href="http://en.wikipedia.org')
+				html.write(str(para))
+			except UnicodeEncodeError:
+				html.write("Unicode issues outputting this paragraph")
+		if debug: print("Output information for " + searchTerms[index])
 	html.write('</html>')
 	print("Ouput to file: " + outputFile)
 
@@ -122,6 +136,8 @@ def readInfile(inputFile):
 
 		inputFile = the path to the file
 		outputs the list of lines """
+
+	global debug
 
 	# Still don't like \ slashes
 	inputFile.replace("\\","/")
@@ -132,6 +148,7 @@ def readInfile(inputFile):
 		lines[l]=lines[l].replace(' ','+')
 		lines[l]=lines[l].replace('\n','')
 	f.close()
+	if debug: print("Finished getting input from file")
 	return lines
 
 def searchMode(amount):
@@ -140,6 +157,8 @@ def searchMode(amount):
 		amount = # of paragraphs to get 
 		returns a list of lists of paragraphs 
 		returns the terms searched """
+
+	global debug
 
 	Paragraphs = []
 	searchTerms = []
@@ -157,7 +176,7 @@ def searchMode(amount):
 				temp.append(para)
 		# Add the list to the list of lists to return later
 		Paragraphs.append(temp)
-		input("Enter to continue")
+		if debug: input("Enter to continue")
 		#Go again!
 		searchTerm = input("\n"*100 + "What would you like to search?\nquit() for quit\n")
 	return Paragraphs, searchTerms
@@ -165,8 +184,8 @@ def searchMode(amount):
 def main():
 	""" Main method """
 
-	# Correct encoding for output whenever I get around to doing single search terms
-	sys.stdout = io.TextIOWrapper(sys.stdout.buffer,'cp437','backslashreplace')
+	global debug
+
 	# Parser for command line arguments
 	parser = argparse.ArgumentParser(prog="pywikidef",description="pywikidef") 
 	parser.add_argument('--inputfile','-i', dest='inputFile', help='Input file with list of searchTerms')
@@ -174,15 +193,19 @@ def main():
 	parser.add_argument('--amount', '-a', dest='amount', default=1, help='Amount of paragraphs')
 	parser.add_argument('--search', '-s', action='store_true', help='Enter 1 term at a time searching')
 	parser.add_argument('--flashlight', '-f', action='store_true', help='TURN DOWN FOR WHAT')
+	parser.add_argument('--debug', '-d', action='store_true', help='Enable debugging')
 	args = parser.parse_args()
+	debug = args.debug
 	if args.flashlight:
 		while True:
 			os.system("color " + str(random.randrange(0, 9)) + str(random.randrange(0, 9)))
+			os.system("echo PARTY TIME")
 	amount = int(args.amount)
 	if args.inputFile:
 		searchTerms = readInfile(args.inputFile)
 		termParagraphs = []
 		for t in searchTerms:
+			if debug: print("Getting information for " + t)
 			termParagraphs.append(getInformation(t, amount))
 		outputToHTML(searchTerms, termParagraphs, args.outputFile)
 	elif args.search:
