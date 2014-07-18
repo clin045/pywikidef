@@ -1,6 +1,4 @@
 from bs4 import BeautifulSoup
-import sys
-import io
 import os
 import urllib.request
 import argparse
