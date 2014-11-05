@@ -3,6 +3,7 @@ import os
 import urllib.request
 import argparse
 import random
+import sys
 
 debug = False
 
@@ -195,9 +196,15 @@ def main():
 	args = parser.parse_args()
 	debug = args.debug
 	if args.flashlight:
-		while True:
-			os.system("color " + str(random.randrange(0, 9)) + str(random.randrange(0, 9)))
-			os.system("echo PARTY TIME")
+		if sys.platform == 'linux':
+			while True:
+				os.system("setterm -background white -foreground white -store")
+				os.system("echo PARTY PARTY TIME")
+				os.system("setterm -background black -foreground black -store")
+		else:
+			while True:
+				os.system("color " + str(random.randrange(0, 9)) + str(random.randrange(0, 9)))
+				os.system("echo PARTY TIME")
 	amount = int(args.amount)
 	if args.inputFile:
 		searchTerms = readInfile(args.inputFile)
